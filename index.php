@@ -98,6 +98,7 @@ echo '</li>'; // SubMenuHeader
 
 //=== SubMenu Items ===
 $i=0;
+
 foreach ($MenuItems[$_SESSION['Module']]['Transactions']['Caption'] as $Caption) {
 /* Transactions Menu Item */
 	$ScriptNameArray = explode('?', substr($MenuItems[$_SESSION['Module']]['Transactions']['URL'][$i],1));
