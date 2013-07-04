@@ -1015,7 +1015,52 @@ if (isset($_POST['ProcessSale']) and $_POST['ProcessSale'] != ''){
 			}//end if its an assembly item - check component stock
 
 		} //end of loop around items on the order for negative check
+		
+		
+     $myArray  = array();
+       
+        foreach ($_SESSION['Items'.$identifier]->LineItems as $OrderLine) 
+         {
 
+              if(array_key_exists($OrderLine->StockID,$myArray)){
+                 $myArray[$OrderLine->StockID]['qty'] += $OrderLine->Quantity ;
+              }else{
+                 $myArray[$OrderLine->StockID]['itm'] = $OrderLine->StockID;
+                 $myArray[$OrderLine->StockID]['qty'] = $OrderLine->Quantity ;
+              }
+            
+         }//end loop
+ 
+              foreach ($myArray as $key => $value) {
+                  
+                $SEC_SQL = "SELECT stockmaster.description,
+					   		locstock.quantity,
+                                                        locstock.allownegative,
+					   		stockmaster.mbflag,
+                                                        stockmaster.retailitem
+		 			FROM locstock
+		 			INNER JOIN stockmaster
+					ON stockmaster.stockid=locstock.stockid
+                                       
+					WHERE stockmaster.stockid='" .$key . "'
+					AND locstock.loccode='" . $_SESSION['Items'.$identifier]->Location . "'";
+             
+                $Neg_Result = DB_query($SEC_SQL,$db,$ErrMsg);
+                $CheckNegRow = DB_fetch_array($Neg_Result);
+                
+                if($CheckNegRow['allownegative'] != 1 ){
+                    
+                if ($CheckNegRow['quantity'] < $myArray[$key]['qty']){
+                    
+                         prnMsg( _('Invoicing the selected order would result in negative stock. The system parameters are set to prohibit negative stocks from occurring. This invoice cannot be created until the stock on hand is corrected.'),'error',$OrderLine->StockID . ' ' . $CheckNegRow['description'] . ' - ' . _('Negative Stock Prohibited'));
+                                    //$ErrorMsgArray[] = $key ." quantity of ".$myArray[$key]['qty'];
+                                    $NegativesFound = true;
+                    }
+                }
+            }
+            
+            
+            
 		if ($NegativesFound){
 			prnMsg(_('The parameter to prohibit negative stock is set and invoicing this sale would result in negative stock. No futher processing can be performed. Alter the sale first changing quantities or deleting lines which do not have sufficient stock.'),'error');
 			$InputError = true;
